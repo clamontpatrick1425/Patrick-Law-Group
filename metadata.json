@@ -1,0 +1,7 @@
+{
+  "name": "Patrick Law Firm",
+  "description": "A modern, high-converting law firm website featuring an AI-powered voice and chat legal assistant.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}
