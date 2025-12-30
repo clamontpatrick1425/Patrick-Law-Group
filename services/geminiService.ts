@@ -1,10 +1,4 @@
 
-import { GoogleGenAI } from "@google/genai";
-
-// Initialize the client once
-// NOTE: API Key is managed via process.env.API_KEY injected by the environment
-export const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-
 export const MODELS = {
   CHAT: 'gemini-2.5-flash',
   LIVE: 'gemini-2.5-flash-native-audio-preview-09-2025'

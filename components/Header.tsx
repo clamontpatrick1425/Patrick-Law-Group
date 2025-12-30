@@ -10,11 +10,28 @@ interface HeaderProps {
 export const Header: React.FC<HeaderProps> = ({ onNavigate, onSchedule }) => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [activeSection, setActiveSection] = useState('home');
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 20);
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          setActiveSection(entry.target.id);
+        }
+      });
+    }, { threshold: 0.5 });
+
+    // Observe relevant sections
+    const sections = document.querySelectorAll('section[id], footer[id]');
+    sections.forEach((section) => observer.observe(section));
+
+    return () => observer.disconnect();
   }, []);
 
   const handleLinkClick = (e: React.MouseEvent, href: string) => {
@@ -40,59 +57,74 @@ export const Header: React.FC<HeaderProps> = ({ onNavigate, onSchedule }) => {
   };
 
   const navLinks = [
-    { name: 'Home', href: '#' },
-    { name: 'About Us', href: 'about-page' }, // Updated href to trigger page view
-    { name: 'Practice Areas', href: '#practice' },
-    { name: 'Results', href: '#results' },
-    { name: 'Attorneys', href: '#attorneys' },
-    { name: 'Contact', href: '#contact' },
+    { name: 'Home', href: '#', id: 'home' },
+    { name: 'About Us', href: 'about-page', id: 'about' },
+    { name: 'Practice Areas', href: '#practice', id: 'practice' },
+    { name: 'Results', href: '#results', id: 'results' },
+    { name: 'Attorneys', href: '#attorneys', id: 'attorneys' },
+    { name: 'Contact', href: '#contact', id: 'contact' },
   ];
 
   return (
-    <header className={`fixed top-0 left-0 right-0 z-40 transition-all duration-300 ${isScrolled ? 'bg-white/95 backdrop-blur-md shadow-md py-3' : 'bg-transparent py-5'}`}>
+    <header className={`fixed top-0 left-0 right-0 z-40 transition-all duration-500 ${isScrolled ? 'bg-white/95 backdrop-blur-md shadow-md py-3' : 'bg-transparent py-6'}`}>
       <div className="container mx-auto px-6 flex justify-between items-center">
         {/* Logo */}
         <a href="#" onClick={(e) => handleLinkClick(e, '#')} className="flex items-center gap-2 group">
-          <Scale className={`w-8 h-8 ${isScrolled ? 'text-accent-600' : 'text-navy-900 group-hover:text-accent-600 transition'}`} />
-          <span className={`text-xl font-serif font-bold tracking-tight ${isScrolled ? 'text-navy-900' : 'text-navy-900'}`}>
+          <Scale className={`w-8 h-8 transition-colors duration-300 ${isScrolled ? 'text-accent-600' : 'text-white drop-shadow-md'}`} />
+          <span className={`text-xl font-serif font-bold tracking-tight transition-colors duration-300 ${isScrolled ? 'text-navy-900' : 'text-white drop-shadow-md'}`}>
             Patrick Law Firm
           </span>
         </a>
 
         {/* Desktop Nav */}
         <nav className="hidden md:flex items-center gap-8">
-          {navLinks.map((link) => (
-            <a 
-              key={link.name} 
-              href={link.href} 
-              onClick={(e) => handleLinkClick(e, link.href)}
-              className="text-sm font-medium text-slate-600 hover:text-accent-600 transition"
-            >
-              {link.name}
-            </a>
-          ))}
+          {navLinks.map((link) => {
+            const isActive = activeSection === link.id && link.href !== 'about-page';
+            
+            return (
+              <a 
+                key={link.name} 
+                href={link.href} 
+                onClick={(e) => handleLinkClick(e, link.href)}
+                className={`text-sm transition-all duration-300 relative py-1 ${
+                    isActive 
+                    ? 'text-accent-500 font-bold' 
+                    : isScrolled ? 'text-slate-600 font-medium hover:text-accent-600' : 'text-white/90 font-medium hover:text-white drop-shadow-sm'
+                }`}
+              >
+                {link.name}
+                {isActive && (
+                    <span className="absolute bottom-0 left-0 w-full h-0.5 bg-accent-500 rounded-full animate-in fade-in zoom-in"></span>
+                )}
+              </a>
+            );
+          })}
           <button 
             onClick={onSchedule}
-            className="px-5 py-2.5 bg-navy-900 text-white text-sm font-medium rounded hover:bg-navy-800 transition shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+            className={`px-6 py-2.5 text-sm font-bold rounded-full transition-all duration-300 shadow-lg transform hover:-translate-y-0.5 active:translate-y-0 ${
+              isScrolled 
+                ? 'bg-navy-900 text-white hover:bg-navy-800' 
+                : 'bg-white text-navy-900 hover:bg-accent-500 hover:text-white'
+            }`}
           >
             Schedule Consultation
           </button>
         </nav>
 
         {/* Mobile Toggle */}
-        <button className="md:hidden text-navy-900" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
+        <button className={`md:hidden transition-colors ${isScrolled ? 'text-navy-900' : 'text-white'}`} onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
           {mobileMenuOpen ? <X size={28} /> : <Menu size={28} />}
         </button>
       </div>
 
       {/* Mobile Menu */}
       {mobileMenuOpen && (
-        <div className="md:hidden absolute top-full left-0 w-full bg-white border-b border-slate-100 shadow-xl py-6 px-6 flex flex-col gap-4 animate-in slide-in-from-top-5">
+        <div className="md:hidden absolute top-full left-0 w-full bg-white border-b border-slate-100 shadow-2xl py-8 px-6 flex flex-col gap-5 animate-in slide-in-from-top-5">
            {navLinks.map((link) => (
             <a 
               key={link.name} 
               href={link.href} 
-              className="text-lg font-medium text-slate-800"
+              className={`text-lg font-bold transition-colors ${activeSection === link.id ? 'text-accent-600' : 'text-navy-900 hover:text-accent-600'}`}
               onClick={(e) => handleLinkClick(e, link.href)}
             >
               {link.name}
@@ -100,7 +132,7 @@ export const Header: React.FC<HeaderProps> = ({ onNavigate, onSchedule }) => {
           ))}
           <button 
             onClick={() => { setMobileMenuOpen(false); onSchedule(); }}
-            className="mt-2 w-full text-center px-5 py-3 bg-navy-900 text-white font-medium rounded"
+            className="mt-4 w-full text-center px-5 py-4 bg-navy-900 text-white font-bold rounded-xl shadow-lg"
           >
             Schedule Consultation
           </button>

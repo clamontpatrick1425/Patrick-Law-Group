@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Briefcase, Building2, Lightbulb, HeartPulse, Shield, Clock, Award, ChevronRight, ChevronDown, ChevronUp, Trophy, Gavel, ArrowUpRight, ArrowRight, Filter, Plus, Minus, HelpCircle } from 'lucide-react';
+import { Briefcase, Building2, Lightbulb, HeartPulse, Shield, Clock, Award, ChevronRight, ChevronDown, ChevronUp, Trophy, Gavel, ArrowUpRight, ArrowRight, Filter, Plus, Minus, HelpCircle, Quote, Star, CheckCircle2 } from 'lucide-react';
 import { Attorney, CaseResult } from '../types';
 
 interface PracticeAreasProps {
@@ -29,14 +29,15 @@ export const PracticeAreas: React.FC<PracticeAreasProps> = ({ onViewArea }) => {
             <div 
                 key={idx} 
                 onClick={() => onViewArea(area.id)}
-                className="p-8 border border-slate-100 rounded-xl hover:shadow-2xl hover:-translate-y-2 transition-all duration-300 bg-white group cursor-pointer"
+                className="p-8 border border-slate-100 rounded-xl hover:shadow-2xl hover:-translate-y-2 transition-all duration-300 bg-white group cursor-pointer relative overflow-hidden"
             >
-              <div className="text-accent-600 mb-6 group-hover:scale-110 transition-transform duration-300">{area.icon}</div>
+              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-accent-500 to-transparent scale-x-0 group-hover:scale-x-100 transition-transform duration-500"></div>
+              <div className="text-accent-600 mb-6 group-hover:scale-110 transition-transform duration-300 bg-accent-50 w-16 h-16 rounded-full flex items-center justify-center group-hover:bg-accent-500 group-hover:text-white">{area.icon}</div>
               <h3 className="text-xl font-bold text-navy-900 mb-3">{area.title}</h3>
               <p className="text-slate-600 text-sm leading-relaxed mb-6">{area.desc}</p>
               <button 
                 onClick={(e) => { e.stopPropagation(); onViewArea(area.id); }}
-                className="text-accent-600 font-semibold text-sm hover:underline flex items-center gap-1 bg-transparent border-none p-0"
+                className="text-accent-600 font-semibold text-sm hover:underline flex items-center gap-1 bg-transparent border-none p-0 group-hover:translate-x-1 transition-transform"
               >
                 Learn More <ChevronRight size={14} />
               </button>
@@ -54,7 +55,6 @@ interface RecentVictoriesProps {
 }
 
 export const RecentVictories: React.FC<RecentVictoriesProps> = ({ results, onViewAll }) => {
-    // Filter to get one highlight per practice area for the dashboard
     const highlights = [
         results.find(r => r.practiceArea === 'Corporate Law'),
         results.find(r => r.practiceArea === 'Personal Injury'),
@@ -73,84 +73,90 @@ export const RecentVictories: React.FC<RecentVictoriesProps> = ({ results, onVie
     };
 
     return (
-        <section className="py-20 bg-navy-900 text-white relative overflow-hidden">
-            {/* Background Elements */}
-            <div className="absolute top-0 left-0 w-full h-full overflow-hidden opacity-10 pointer-events-none">
-                <div className="absolute top-[-10%] right-[-5%] w-[500px] h-[500px] bg-accent-600 rounded-full blur-[100px]"></div>
-                <div className="absolute bottom-[-10%] left-[-5%] w-[400px] h-[400px] bg-blue-600 rounded-full blur-[100px]"></div>
-            </div>
-
-            <div className="container mx-auto px-6 relative z-10">
-                <div className="flex flex-col md:flex-row justify-between items-end mb-12">
-                    <div className="max-w-2xl">
-                        <div className="flex items-center gap-2 text-accent-500 font-bold mb-2 tracking-wider text-sm uppercase">
-                            <Trophy size={16} />
-                            <span>Proven Track Record</span>
-                        </div>
-                        <h2 className="text-3xl lg:text-4xl font-serif font-bold text-white mb-4">Recent Victories</h2>
-                        <p className="text-slate-300">
-                            We measure success by the value we create for our clients. Here are just a few of our recent judgments and settlements.
-                        </p>
+        <section id="results" className="py-24 bg-slate-50 relative overflow-hidden">
+            <div className="container mx-auto px-6">
+                
+                {/* The Standalone Victory Card */}
+                <div className="relative bg-navy-900 rounded-[3rem] shadow-[0_50px_100px_-20px_rgba(15,23,42,0.6)] overflow-hidden border border-white/5">
+                    
+                    {/* Atmospheric Background Layers within Card */}
+                    <div className="absolute inset-0 pointer-events-none overflow-hidden">
+                        <div className="absolute top-[-20%] left-[-10%] w-[600px] h-[600px] bg-accent-600/20 rounded-full blur-[120px]"></div>
+                        <div className="absolute bottom-[-10%] right-[-5%] w-[400px] h-[400px] bg-blue-600/10 rounded-full blur-[100px]"></div>
+                        {/* Grid Texture */}
+                        <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, white 1px, transparent 0)', backgroundSize: '40px 40px' }}></div>
                     </div>
-                    <button 
-                        onClick={onViewAll}
-                        className="hidden md:flex items-center gap-2 bg-white/10 hover:bg-white/20 text-white px-6 py-3 rounded-full backdrop-blur-sm transition border border-white/10"
-                    >
-                        View Case Registry <ArrowRight size={18} />
-                    </button>
-                </div>
 
-                <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-                    {highlights.map((result, idx) => (
-                        <div 
-                            key={idx} 
-                            className={`bg-navy-800/50 backdrop-blur-sm border-x border-b border-navy-700 ${getBorderColor(result.practiceArea)} border-t-4 p-6 rounded-2xl hover:bg-navy-800 hover:scale-[1.02] hover:shadow-2xl transition-all duration-300 group relative overflow-hidden cursor-pointer`}
-                            onClick={onViewAll}
-                        >
-                            <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition">
-                                <Gavel size={64} />
+                    <div className="relative z-10 p-8 md:p-14 lg:p-16">
+                        
+                        {/* Card Header */}
+                        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-10 mb-14">
+                            <div className="max-w-3xl">
+                                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-accent-500/10 border border-accent-500/20 text-accent-400 font-bold mb-6 tracking-widest text-[10px] uppercase shadow-inner">
+                                    <Trophy size={14} className="animate-pulse" />
+                                    <span>Track Record of Excellence</span>
+                                </div>
+                                <h2 className="text-4xl md:text-5xl font-serif font-bold text-white mb-6 leading-tight">
+                                    Proven Results for <br /><span className="text-transparent bg-clip-text bg-gradient-to-r from-accent-400 to-teal-200">Our Valued Clients</span>
+                                </h2>
+                                <p className="text-slate-300 text-lg md:text-xl font-light leading-relaxed max-w-xl">
+                                    Strategic victories achieved through meticulous preparation and unyielding advocacy.
+                                </p>
                             </div>
                             
-                            <div className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-4 flex items-center gap-2">
-                                <span className={`w-2 h-2 rounded-full ${
-                                    result.practiceArea === 'Personal Injury' ? 'bg-rose-500' :
-                                    result.practiceArea === 'Corporate Law' ? 'bg-blue-500' :
-                                    result.practiceArea === 'Intellectual Property' ? 'bg-purple-500' :
-                                    'bg-teal-500'
-                                }`}></span>
-                                {result.practiceArea}
-                            </div>
-
-                            <div className="mb-4">
-                                <span className="text-3xl lg:text-4xl font-bold text-white block mb-1">
-                                    {result.amount || "Undisclosed"}
-                                </span>
-                                <span className="text-accent-400 text-sm font-medium uppercase tracking-wide">
-                                    {result.outcome}
-                                </span>
-                            </div>
-
-                            <p className="text-slate-300 text-sm line-clamp-3 mb-6">
-                                {result.description}
-                            </p>
-
                             <button 
-                                onClick={(e) => { e.stopPropagation(); onViewAll(); }}
-                                className="flex items-center gap-2 text-sm font-bold text-white hover:text-accent-400 transition"
+                                onClick={onViewAll}
+                                className="group flex items-center gap-3 bg-white text-navy-900 px-8 py-4 rounded-full font-bold transition-all duration-300 hover:bg-accent-500 hover:text-white shadow-xl hover:-translate-y-1 active:scale-95 whitespace-nowrap"
                             >
-                                View Details <ArrowUpRight size={16} />
+                                Browse All Victories 
+                                <ArrowRight size={20} className="group-hover:translate-x-1.5 transition-transform" />
                             </button>
                         </div>
-                    ))}
-                </div>
 
-                <div className="mt-8 text-center md:hidden">
-                    <button 
-                        onClick={onViewAll}
-                        className="inline-flex items-center gap-2 bg-white/10 text-white px-6 py-3 rounded-full"
-                    >
-                        View All Results <ArrowRight size={18} />
-                    </button>
+                        {/* Victories Grid inside the card - Fit horizontally from LG upwards */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 xl:gap-6">
+                            {highlights.map((result, idx) => (
+                                <div 
+                                    key={idx} 
+                                    className={`bg-white/5 backdrop-blur-sm border border-white/10 ${getBorderColor(result.practiceArea)} border-t-4 p-6 xl:p-7 rounded-2xl xl:rounded-3xl hover:bg-white/10 hover:scale-[1.02] transition-all duration-500 group cursor-pointer flex flex-col h-full`}
+                                    onClick={onViewAll}
+                                >
+                                    <div className="flex items-center justify-between mb-5">
+                                        <div className="text-[9px] xl:text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
+                                            <span className={`w-2 h-2 rounded-full ${
+                                                result.practiceArea === 'Personal Injury' ? 'bg-rose-500' :
+                                                result.practiceArea === 'Corporate Law' ? 'bg-blue-500' :
+                                                result.practiceArea === 'Intellectual Property' ? 'bg-purple-500' :
+                                                'bg-teal-500'
+                                            }`}></span>
+                                            {result.practiceArea}
+                                        </div>
+                                        <div className="p-1.5 rounded-full bg-white/5 text-slate-500 group-hover:text-accent-400 transition-colors">
+                                            <Gavel size={14} />
+                                        </div>
+                                    </div>
+
+                                    <div className="mb-5">
+                                        <span className="text-2xl xl:text-3xl font-bold text-white block mb-1 tracking-tight">
+                                            {result.amount || "Confidential"}
+                                        </span>
+                                        <span className="text-accent-500 text-[10px] font-bold uppercase tracking-wider">
+                                            {result.outcome}
+                                        </span>
+                                    </div>
+
+                                    <p className="text-slate-400 text-xs xl:text-sm font-light leading-relaxed mb-8 flex-grow opacity-90 group-hover:opacity-100 group-hover:text-slate-200 transition-colors line-clamp-4">
+                                        {result.description}
+                                    </p>
+
+                                    <div className="pt-5 border-t border-white/5 flex items-center justify-between">
+                                        <span className="text-[9px] text-slate-500 font-bold uppercase tracking-wide">Ref #V-{idx + 1042}</span>
+                                        <ArrowUpRight size={18} className="text-white opacity-40 group-hover:opacity-100 transition-all group-hover:translate-x-1 group-hover:-translate-y-1" />
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
                 </div>
             </div>
         </section>
@@ -161,27 +167,27 @@ export const ValueProp: React.FC = () => {
   return (
     <section id="about" className="py-24 bg-navy-900 text-white border-b border-navy-800">
       <div className="container mx-auto px-6">
-        <div className="grid md:grid-cols-3 gap-12 text-center">
-          <div className="space-y-4">
-            <div className="w-16 h-16 bg-navy-800 rounded-full flex items-center justify-center mx-auto text-accent-500">
+        <div className="grid md:grid-cols-3 gap-12 text-center divide-y md:divide-y-0 md:divide-x divide-navy-800">
+          <div className="space-y-4 px-4 pt-8 md:pt-0">
+            <div className="w-16 h-16 bg-navy-800 rounded-full flex items-center justify-center mx-auto text-accent-500 shadow-[0_0_20px_rgba(20,184,166,0.3)]">
                <Shield size={32} />
             </div>
             <h3 className="text-xl font-bold">Client-First Protection</h3>
-            <p className="text-slate-400">We prioritize your interests above all, offering transparent communication and fierce advocacy.</p>
+            <p className="text-slate-400 leading-relaxed">We prioritize your interests above all, offering transparent communication and fierce advocacy in every interaction.</p>
           </div>
-          <div className="space-y-4">
-            <div className="w-16 h-16 bg-navy-800 rounded-full flex items-center justify-center mx-auto text-accent-500">
+          <div className="space-y-4 px-4 pt-8 md:pt-0">
+            <div className="w-16 h-16 bg-navy-800 rounded-full flex items-center justify-center mx-auto text-accent-500 shadow-[0_0_20px_rgba(20,184,166,0.3)]">
                <Award size={32} />
             </div>
             <h3 className="text-xl font-bold">Proven Track Record</h3>
-            <p className="text-slate-400">Over $500M recovered for clients and hundreds of successful corporate mergers facilitated.</p>
+            <p className="text-slate-400 leading-relaxed">Over $500M recovered for clients and hundreds of successful corporate mergers facilitated with precision.</p>
           </div>
-          <div className="space-y-4">
-             <div className="w-16 h-16 bg-navy-800 rounded-full flex items-center justify-center mx-auto text-accent-500">
+          <div className="space-y-4 px-4 pt-8 md:pt-0">
+             <div className="w-16 h-16 bg-navy-800 rounded-full flex items-center justify-center mx-auto text-accent-500 shadow-[0_0_20px_rgba(20,184,166,0.3)]">
                <Clock size={32} />
             </div>
             <h3 className="text-xl font-bold">24/7 Responsiveness</h3>
-            <p className="text-slate-400">Legal issues don't sleep. Our team and AI assistants ensure you're never left in the dark.</p>
+            <p className="text-slate-400 leading-relaxed">Legal issues don't sleep. Our team and AI assistants ensure you're never left in the dark when it matters most.</p>
           </div>
         </div>
       </div>
@@ -194,6 +200,12 @@ interface TestimonialsProps {
 }
 
 export const Testimonials: React.FC<TestimonialsProps> = ({ onViewAllResults }) => {
+  const testimonials = [
+    { quote: "Patrick Law Group handled our IP litigation with incredible skill. They understood the technology better than we expected.", author: "Marcus T.", role: "Tech CEO", location: "Kansas City, MO" },
+    { quote: "I felt completely lost after my accident. They didn't just win my case; they helped me rebuild my life with dignity.", author: "Sarah J.", role: "Personal Injury Client", location: "Lees Summit, MO" },
+    { quote: "Strategic, aggressive, and highly intelligent. They guided our merger perfectly. Best corporate counsel we've ever hired.", author: "David L.", role: "Founder", location: "Overland Park, KS" }
+  ];
+
   return (
     <section id="testimonials" className="py-24 bg-slate-50 relative overflow-hidden">
        {/* Bg Pattern */}
@@ -206,27 +218,35 @@ export const Testimonials: React.FC<TestimonialsProps> = ({ onViewAllResults }) 
             <div>
                 <h2 className="text-3xl font-serif font-bold text-navy-900 mb-2">Client Testimonials</h2>
                 <div className="h-1 w-20 bg-accent-500"></div>
+                <p className="mt-4 text-slate-600">See what our community is saying.</p>
+            </div>
+            <div className="hidden md:flex gap-2 text-yellow-500">
+                {[...Array(5)].map((_,i) => <Star key={i} size={20} fill="currentColor" />)}
+                <span className="text-navy-900 font-bold ml-2">5.0 Average Rating</span>
             </div>
          </div>
 
-         <div className="grid md:grid-cols-3 gap-8">
-           {[
-             { quote: "FirmName Law Group handled our IP litigation with incredible skill. They understood the technology better than we expected.", author: "Marcus T.", role: "Tech CEO" },
-             { quote: "I felt completely lost after my accident. They didn't just win my case; they helped me rebuild my life with dignity.", author: "Sarah J.", role: "Personal Injury Client" },
-             { quote: "Strategic, aggressive, and highly intelligent. They guided our merger perfectly. Best corporate counsel we've ever hired.", author: "David L.", role: "Founder" }
-           ].map((t, i) => (
-             <div key={i} className="bg-white p-8 rounded-xl shadow-md border-t-4 border-accent-500 hover:shadow-lg transition">
-               <div className="flex gap-1 text-yellow-400 mb-4">
-                 {'★★★★★'}
+         {/* Horizontal Scroll / Grid Layout */}
+         <div className="flex overflow-x-auto snap-x snap-mandatory gap-6 pb-8 -mx-6 px-6 md:grid md:grid-cols-3 md:gap-8 md:overflow-visible md:pb-0 md:px-0 scrollbar-hide">
+           {testimonials.map((t, i) => (
+             <div key={i} className="min-w-[85vw] md:min-w-0 snap-center bg-white p-8 rounded-xl shadow-md border-t-4 border-accent-500 hover:shadow-xl transition flex flex-col h-full group">
+               <div className="mb-6">
+                 <Quote className="text-accent-200 w-10 h-10 mb-4" />
+                 <p className="text-slate-700 italic text-lg leading-relaxed">"{t.quote}"</p>
                </div>
-               <p className="text-slate-700 italic mb-6">"{t.quote}"</p>
-               <div className="flex items-center gap-3">
-                 <div className="w-10 h-10 bg-navy-100 rounded-full flex items-center justify-center font-bold text-navy-800">
+               
+               <div className="mt-auto flex items-center gap-4 border-t border-slate-100 pt-6">
+                 <div className="w-12 h-12 bg-navy-900 rounded-full flex items-center justify-center font-bold text-white shadow-lg text-lg">
                     {t.author.charAt(0)}
                  </div>
                  <div>
-                   <p className="font-bold text-navy-900 text-sm">{t.author}</p>
-                   <p className="text-xs text-slate-500">{t.role}</p>
+                   <p className="font-bold text-navy-900 flex items-center gap-2">
+                       {t.author}
+                       <span className="bg-green-100 text-green-700 text-[10px] px-2 py-0.5 rounded-full flex items-center gap-1">
+                           <CheckCircle2 size={10} /> Verified
+                       </span>
+                   </p>
+                   <p className="text-xs text-slate-500 font-medium">{t.role} &bull; {t.location}</p>
                  </div>
                </div>
              </div>
@@ -261,17 +281,18 @@ export const Team: React.FC<TeamProps> = ({ attorneys, onSelectAttorney }) => {
         <section id="attorneys" className="py-24 bg-white">
             <div className="container mx-auto px-6 text-center">
                  <h2 className="text-3xl font-serif font-bold text-navy-900 mb-4">Meet Our Attorneys</h2>
-                 <p className="text-slate-600 mb-8">Dedicated experts fighting for your success.</p>
+                 <div className="h-1 w-20 bg-accent-500 mx-auto mb-4"></div>
+                 <p className="text-slate-600 mb-8 max-w-2xl mx-auto">Dedicated experts fighting for your success with decades of combined experience.</p>
 
                  {/* Filters */}
-                 <div className="flex flex-wrap justify-center gap-3 mb-12">
+                 <div className="flex flex-wrap justify-center gap-3 mb-16">
                     {practiceFilters.map((f) => (
                         <button
                             key={f}
                             onClick={() => setFilter(f)}
-                            className={`px-4 py-2 rounded-full text-sm font-semibold transition-all duration-300 border ${
+                            className={`px-5 py-2.5 rounded-full text-sm font-semibold transition-all duration-300 border ${
                                 filter === f 
-                                    ? 'bg-navy-900 text-white border-navy-900 shadow-md' 
+                                    ? 'bg-navy-900 text-white border-navy-900 shadow-md scale-105' 
                                     : 'bg-white text-slate-600 border-slate-200 hover:border-accent-500 hover:text-accent-600'
                             }`}
                         >
@@ -295,7 +316,7 @@ export const Team: React.FC<TeamProps> = ({ attorneys, onSelectAttorney }) => {
                                     onClick={() => onSelectAttorney(attorney.id)}
                                     className={`group relative bg-white rounded-xl p-6 border border-transparent hover:border-slate-100 hover:shadow-2xl transition-all duration-300 cursor-pointer flex flex-col items-center animate-in fade-in zoom-in-95 ${isExpanded ? 'row-span-2 z-10' : ''}`}
                                 >
-                                    <div className="w-48 h-48 mx-auto bg-slate-200 rounded-full mb-6 overflow-hidden relative border-4 border-transparent group-hover:border-accent-500 transition-all duration-300 shrink-0">
+                                    <div className="w-48 h-48 mx-auto bg-slate-200 rounded-full mb-6 overflow-hidden relative border-4 border-transparent group-hover:border-accent-500 transition-all duration-300 shrink-0 shadow-lg">
                                         <img 
                                         src={attorney.imageUrl}
                                         alt={attorney.name} 

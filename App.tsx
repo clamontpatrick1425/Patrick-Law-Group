@@ -9,7 +9,7 @@ import { AttorneyProfile } from './components/AttorneyProfile';
 import { CaseResultsPage } from './components/CaseResultsPage';
 import { AboutPage } from './components/AboutPage';
 import { PracticeAreaPage } from './components/PracticeAreaPage';
-import { Breadcrumbs } from './components/Breadcrumbs'; // New Component
+import { Breadcrumbs } from './components/Breadcrumbs';
 import { DisclaimerModal, TermsModal, PrivacyPolicyModal } from './components/LegalModals';
 import { ContactModal } from './components/ContactModal';
 import { Attorney, CaseResult } from './types';
@@ -135,6 +135,7 @@ const App: React.FC = () => {
   const [showPrivacy, setShowPrivacy] = useState(false);
   const [showContactModal, setShowContactModal] = useState(false);
   const [isAIWidgetOpen, setIsAIWidgetOpen] = useState(false);
+  const [aiWidgetTab, setAiWidgetTab] = useState<'chat' | 'voice'>('chat');
 
   // Dynamic Title Management
   useEffect(() => {
@@ -157,7 +158,6 @@ const App: React.FC = () => {
   }, [currentView, selectedAttorneyId, selectedPracticeId]);
 
   const handleNavigate = (section: string) => {
-      // Check for specific view navigation
       if (section === 'about') {
           setCurrentView('about');
       } else {
@@ -183,6 +183,18 @@ const App: React.FC = () => {
   };
 
   const handleOpenContact = () => setShowContactModal(true);
+
+  const handleOpenVoiceAI = () => {
+    setAiWidgetTab('voice');
+    setIsAIWidgetOpen(true);
+  };
+
+  const handleToggleAIWidget = () => {
+    if (!isAIWidgetOpen) {
+        setAiWidgetTab('chat'); // Default to chat when clicking the side tab
+    }
+    setIsAIWidgetOpen(!isAIWidgetOpen);
+  };
 
   // Content Renderer with Wrapper for Breadcrumbs
   const renderContent = () => {
@@ -251,7 +263,7 @@ const App: React.FC = () => {
       // Default Home View
       return (
         <main>
-            <Hero onOpenAI={() => setIsAIWidgetOpen(true)} />
+            <Hero onOpenAI={handleOpenVoiceAI} />
             <RecentVictories results={CASE_RESULTS} onViewAll={handleViewResults} />
             <PracticeAreas onViewArea={handleViewPracticeArea} />
             <ValueProp />
@@ -274,7 +286,11 @@ const App: React.FC = () => {
         onOpenPrivacy={() => setShowPrivacy(true)}
         onSchedule={handleOpenContact}
       />
-      <AIAssistantWidget isOpen={isAIWidgetOpen} onToggle={() => setIsAIWidgetOpen(!isAIWidgetOpen)} />
+      <AIAssistantWidget 
+        isOpen={isAIWidgetOpen} 
+        onToggle={handleToggleAIWidget} 
+        initialTab={aiWidgetTab}
+      />
 
       {/* Modals */}
       <DisclaimerModal isOpen={showDisclaimer} onClose={() => setShowDisclaimer(false)} />

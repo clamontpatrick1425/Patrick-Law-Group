@@ -1,160 +1,124 @@
 
-import React, { useState } from 'react';
-import { ArrowRight, Video, Loader2, Play, Bot, Mic } from 'lucide-react';
-import { GoogleGenAI } from "@google/genai";
+import React from 'react';
+import { ArrowRight, Mic, Sparkles } from 'lucide-react';
 
 interface HeroProps {
     onOpenAI: () => void;
 }
 
 export const Hero: React.FC<HeroProps> = ({ onOpenAI }) => {
-  const [videoUri, setVideoUri] = useState<string | null>(null);
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [loadingMsg, setLoadingMsg] = useState('');
-
-  const handleGenerateVideo = async () => {
-    try {
-      if (!window.aistudio.hasSelectedApiKey()) {
-          await window.aistudio.openSelectKey();
-      }
-
-      setIsGenerating(true);
-      setLoadingMsg('Initializing AI Studio...');
-      
-      // Initialize client with key from env (injected after selection)
-      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-      
-      setLoadingMsg('Generating cinematic legal scene (this takes ~1 min)...');
-      
-      let operation = await ai.models.generateVideos({
-          model: 'veo-3.1-fast-generate-preview',
-          prompt: 'Cinematic 8-second looping video, professional attorney and client sitting in a modern sunlit office, reviewing documents, warm lighting, high resolution, photorealistic.',
-          config: {
-              numberOfVideos: 1,
-              resolution: '1080p',
-              aspectRatio: '16:9'
-          }
-      });
-
-      while (!operation.done) {
-          setLoadingMsg('Rendering pixels...');
-          await new Promise(resolve => setTimeout(resolve, 5000));
-          operation = await ai.operations.getVideosOperation({operation: operation});
-      }
-
-      if (operation.response?.generatedVideos?.[0]?.video?.uri) {
-          setLoadingMsg('Finalizing video...');
-          const downloadLink = operation.response.generatedVideos[0].video.uri;
-          // Fetch with API key to access the actual media bytes
-          const videoResponse = await fetch(`${downloadLink}&key=${process.env.API_KEY}`);
-          const blob = await videoResponse.blob();
-          const url = URL.createObjectURL(blob);
-          setVideoUri(url);
-      }
-      
-    } catch (e: any) {
-      console.error(e);
-      // Handle "Requested entity was not found" error by resetting key selection
-      if (e.message?.includes('Requested entity was not found') || e.toString().includes('Requested entity was not found')) {
-          try {
-            await window.aistudio.openSelectKey();
-          } catch (keyError) {
-            console.error("Failed to open key selector", keyError);
-          }
-      } else {
-          alert('Video generation failed. Please try again or check your API key permissions.');
-      }
-    } finally {
-      setIsGenerating(false);
-      setLoadingMsg('');
-    }
-  };
+  // Reliable high-performance CDN link for the cinematic background video
+  const backgroundVideoUrl = "https://assets.mixkit.co/videos/preview/mixkit-top-aerial-shot-of-city-skyscrapers-at-night-4434-large.mp4";
+  const posterImageUrl = "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&q=80&w=2070";
 
   return (
-    <section className="relative pt-32 pb-20 lg:pt-48 lg:pb-32 overflow-hidden bg-slate-50 min-h-[700px] flex items-center">
+    <section id="home" className="relative min-h-screen flex items-center overflow-hidden bg-navy-900">
       
-      {/* Dynamic Background */}
-      {videoUri ? (
-        <div className="absolute inset-0 w-full h-full z-0">
-           <video 
-             src={videoUri} 
-             autoPlay 
-             loop 
-             muted 
-             playsInline 
-             className="w-full h-full object-cover opacity-30"
-           />
-           <div className="absolute inset-0 bg-gradient-to-r from-slate-50 via-slate-50/80 to-transparent"></div>
-        </div>
-      ) : (
-        /* Static Placeholder Background */
-        <div className="absolute top-0 right-0 w-1/2 h-full bg-slate-100 skew-x-12 translate-x-32 hidden lg:block z-0"></div>
-      )}
+      {/* Background Video Layer */}
+      <div className="absolute inset-0 z-0 w-full h-full overflow-hidden">
+        <video 
+          autoPlay 
+          loop 
+          muted 
+          playsInline 
+          poster={posterImageUrl}
+          className="absolute top-1/2 left-1/2 min-w-full min-h-full w-auto h-auto object-cover -translate-x-1/2 -translate-y-1/2 pointer-events-none"
+          style={{ filter: 'brightness(0.35) contrast(1.1) saturate(0.7)' }}
+        >
+          <source src={backgroundVideoUrl} type="video/mp4" />
+        </video>
+        
+        <div className="absolute inset-0 bg-gradient-to-r from-navy-900/95 via-navy-900/40 to-transparent z-10"></div>
+        <div className="absolute inset-0 bg-gradient-to-b from-navy-900/50 via-transparent to-navy-900/80 z-10"></div>
+        <div className="absolute inset-0 opacity-[0.08] mix-blend-overlay pointer-events-none z-10" 
+             style={{ backgroundImage: `url('https://www.transparenttextures.com/patterns/asfalt-dark.png')` }}></div>
+      </div>
       
-      <div className="container mx-auto px-6 relative z-10">
-        <div className="flex flex-col items-center text-center max-w-4xl mx-auto">
+      <div className="container mx-auto px-6 relative z-20">
+        <div className="flex flex-col lg:flex-row items-center gap-16 lg:gap-24">
           
-          <h1 className="text-4xl lg:text-7xl font-serif font-bold text-navy-900 leading-tight mb-8">
-            Strategic Legal Protection for <span className="text-accent-600">Modern Business</span> & Innovation.
-          </h1>
-          
-          <p className="text-xl text-slate-600 leading-relaxed max-w-2xl mx-auto mb-10">
-            Specializing in Corporate, IP, and Personal Injury law. We protect what you’ve built and fight for what you’re owed with aggressive, tech-forward representation.
-          </p>
-          
-          <div className="flex flex-col sm:flex-row flex-wrap gap-4 justify-center items-center w-full">
-            <a href="#contact" className="px-8 py-4 bg-navy-900 text-white rounded-full font-medium hover:bg-navy-800 transition shadow-lg flex items-center justify-center gap-2 group min-w-[200px]">
-              Book a Consultation
-              <ArrowRight size={18} className="group-hover:translate-x-1 transition" />
-            </a>
+          {/* Main Hero Content (Left) */}
+          <div className="flex-1 text-center lg:text-left pt-20 lg:pt-0">
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-accent-500/20 border border-accent-500/30 text-accent-400 text-xs font-bold uppercase tracking-widest mb-8 animate-in fade-in slide-in-from-top-4 duration-1000 shadow-xl backdrop-blur-sm">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-accent-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-accent-500"></span>
+              </span>
+              Est. 1981 • Strategic Protection
+            </div>
 
-             {/* AI Voice Orb Trigger */}
-             <button 
-                onClick={onOpenAI}
-                className="pl-2 pr-6 py-2 bg-white text-navy-900 border border-slate-200 rounded-full font-medium hover:border-accent-400 hover:shadow-xl transition-all duration-300 shadow-md flex items-center gap-4 group min-w-[220px]"
-             >
-                {/* Visual Orb Icon */}
-                <div className="relative w-12 h-12 rounded-full bg-gradient-to-br from-accent-400 to-blue-600 flex items-center justify-center shadow-lg group-hover:scale-105 transition-transform duration-300">
-                    <span className="absolute inset-0 rounded-full bg-white/20 animate-pulse"></span>
-                    <div className="absolute inset-0.5 rounded-full bg-gradient-to-tr from-transparent to-white/40"></div>
-                    <Mic size={20} className="text-white relative z-10 drop-shadow-md" />
-                </div>
-                
-                <div className="text-left">
-                    <span className="block text-xs text-slate-500 font-semibold uppercase tracking-wider">AI Assistant</span>
-                    <span className="block text-lg font-serif font-bold text-accent-600 leading-none">Talk to Hannah</span>
-                </div>
-             </button>
+            <h1 className="text-5xl lg:text-8xl font-serif font-bold text-white leading-[1.1] mb-8 drop-shadow-2xl">
+              Strategic Law. <br />
+              <span className="text-accent-500 italic font-normal">Proven</span> Results.
+            </h1>
             
-            {!videoUri ? (
-              <button 
-                onClick={handleGenerateVideo}
-                disabled={isGenerating}
-                className="px-8 py-4 bg-white text-navy-900 border border-slate-200 rounded-full font-medium hover:border-accent-600 hover:text-accent-600 transition shadow-sm flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed min-w-[200px]"
-              >
-                {isGenerating ? (
-                  <>
-                    <Loader2 size={18} className="animate-spin text-accent-600" />
-                    <span className="text-sm">{loadingMsg}</span>
-                  </>
-                ) : (
-                  <>
-                    <Video size={18} />
-                    Generate Hero Video
-                  </>
-                )}
-              </button>
-            ) : (
-               <button className="px-8 py-4 bg-white text-green-700 border border-green-200 rounded-full font-medium shadow-sm flex items-center justify-center gap-2 cursor-default min-w-[200px]">
-                  <Play size={18} className="fill-current" />
-                  AI Video Active
-               </button>
-            )}
+            <p className="text-xl lg:text-2xl text-slate-200 leading-relaxed mb-12 max-w-2xl mx-auto lg:mx-0 drop-shadow-lg font-light">
+              Protecting high-stakes corporate interests and personal legacies with aggressive, tech-forward representation for over 40 years.
+            </p>
+            
+            <div className="flex justify-center lg:justify-start">
+              <a href="#contact" className="px-10 py-5 bg-accent-600 text-white rounded-full font-bold hover:bg-accent-500 transition shadow-2xl flex items-center justify-center gap-2 group text-lg hover:scale-105 active:scale-95 duration-300">
+                Book a Free Consultation
+                <ArrowRight size={22} className="group-hover:translate-x-1.5 transition-transform" />
+              </a>
+            </div>
+
+            <div className="mt-16 flex items-center justify-center lg:justify-start gap-4 text-sm text-slate-300 font-semibold tracking-wide">
+               <div className="flex -space-x-3">
+                  {[1,2,3].map(i => (
+                    <div key={i} className="w-8 h-8 rounded-full border-2 border-navy-900 bg-slate-700 flex items-center justify-center overflow-hidden">
+                      <img src={`https://i.pravatar.cc/100?img=${i+10}`} alt="Attorney" className="w-full h-full object-cover opacity-80" />
+                    </div>
+                  ))}
+               </div>
+               <p className="flex items-center gap-2">
+                 <span className="w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse shadow-[0_0_12px_rgba(34,197,94,0.8)]"></span>
+                 Expert Legal Team Standing By
+               </p>
+            </div>
           </div>
 
-          <div className="mt-12 flex items-center justify-center gap-2 text-sm text-slate-500 bg-white/80 backdrop-blur-sm px-4 py-2 rounded-full border border-slate-200 shadow-sm">
-             <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
-             Available for immediate case review
+          {/* AI Interface Card (Far Right) */}
+          <div className="flex-1 w-full lg:max-w-md animate-in fade-in slide-in-from-right-10 duration-1000">
+            <div className="relative group">
+              {/* Glowing Aura Effect */}
+              <div className="absolute -inset-1 bg-gradient-to-r from-accent-500 to-blue-600 rounded-[2rem] blur opacity-25 group-hover:opacity-40 transition duration-1000 group-hover:duration-200"></div>
+              
+              <div className="relative bg-navy-900/60 backdrop-blur-2xl border border-white/10 rounded-[2rem] p-8 lg:p-10 shadow-2xl flex flex-col items-center text-center overflow-hidden">
+                {/* Visualizer Lines decoration */}
+                <div className="absolute top-0 left-0 w-full h-1 flex gap-1 opacity-20">
+                  {[...Array(20)].map((_, i) => (
+                    <div key={i} className="flex-1 bg-accent-500 h-full animate-pulse" style={{ animationDelay: `${i * 0.1}s` }}></div>
+                  ))}
+                </div>
+
+                <div className="mb-6 relative">
+                  <div className="w-24 h-24 rounded-full bg-gradient-to-br from-accent-400 to-blue-600 flex items-center justify-center shadow-inner group-hover:scale-110 transition-transform duration-500 ring-4 ring-white/5">
+                    <Mic size={52} className="text-white drop-shadow-lg" />
+                    <Sparkles size={16} className="absolute -top-1 -right-1 text-accent-300 animate-bounce" />
+                  </div>
+                  <div className="absolute inset-0 rounded-full border-2 border-accent-500/30 animate-ping"></div>
+                </div>
+
+                <h3 className="text-2xl font-serif font-bold text-white mb-2">Talk to Hannah</h3>
+                <p className="text-slate-300 text-sm mb-8 leading-relaxed">
+                  Experience our 24/7 AI-powered legal concierge. Hannah can evaluate your case and help schedule your consultation instantly.
+                </p>
+
+                <button 
+                  onClick={onOpenAI}
+                  className="w-full py-4 bg-white text-navy-900 rounded-2xl font-black text-sm uppercase tracking-widest hover:bg-accent-500 hover:text-white transition-all duration-300 shadow-xl flex items-center justify-center gap-3 transform hover:-translate-y-1 active:scale-95"
+                >
+                  Launch Live AI
+                  <Sparkles size={18} />
+                </button>
+
+                <p className="mt-6 text-[10px] text-slate-500 font-bold uppercase tracking-wider flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-green-500"></span>
+                  Fully Operational • Zero Latency
+                </p>
+              </div>
+            </div>
           </div>
 
         </div>

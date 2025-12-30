@@ -1,7 +1,7 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { Modality, LiveServerMessage } from '@google/genai';
-import { ai, MODELS, SYSTEM_INSTRUCTION } from '../services/geminiService';
+import { Modality, LiveServerMessage, GoogleGenAI } from '@google/genai';
+import { MODELS, SYSTEM_INSTRUCTION } from '../services/geminiService';
 import { createBlob, decode, decodeAudioData } from '../utils/audioUtils';
 
 export const useLiveAssistant = () => {
@@ -66,6 +66,18 @@ export const useLiveAssistant = () => {
   const connect = useCallback(async () => {
     try {
       setError(null);
+
+      // Ensure API Key
+      if (!await window.aistudio.hasSelectedApiKey()) {
+        await window.aistudio.openSelectKey();
+      }
+      
+      const apiKey = process.env.API_KEY;
+      if (!apiKey) {
+        throw new Error("API Key not found. Please select a valid key.");
+      }
+
+      const client = new GoogleGenAI({ apiKey });
       
       // 1. Setup Audio Contexts
       inputContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 16000 });
@@ -77,7 +89,7 @@ export const useLiveAssistant = () => {
       streamRef.current = stream;
 
       // 3. Connect to Gemini Live
-      const sessionPromise = ai.live.connect({
+      const sessionPromise = client.live.connect({
         model: MODELS.LIVE,
         config: {
           responseModalities: [Modality.AUDIO],
@@ -163,9 +175,9 @@ export const useLiveAssistant = () => {
           },
           onerror: (err) => {
             console.error('Gemini Live Error', err);
-            // Handle specific 404 error by prompting for key selection
+            // Handle specific 404/400 error by prompting for key selection
             const errStr = String(err);
-            if (errStr.includes('Requested entity was not found') || errStr.includes('404')) {
+            if (errStr.includes('Requested entity was not found') || errStr.includes('404') || errStr.includes('400') || errStr.includes('API Key not found')) {
                 try {
                     (window as any).aistudio?.openSelectKey();
                 } catch (e) {
@@ -182,9 +194,9 @@ export const useLiveAssistant = () => {
 
     } catch (err: any) {
       console.error("Failed to connect", err);
-      // Handle specific 404 error by prompting for key selection
+      // Handle specific 404/400 error by prompting for key selection
       const errStr = err.message || String(err);
-      if (errStr.includes('Requested entity was not found') || errStr.includes('404')) {
+      if (errStr.includes('Requested entity was not found') || errStr.includes('404') || errStr.includes('400') || errStr.includes('API Key not found')) {
           try {
              (window as any).aistudio?.openSelectKey();
           } catch (e) {
