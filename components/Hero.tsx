@@ -7,8 +7,8 @@ interface HeroProps {
 }
 
 export const Hero: React.FC<HeroProps> = ({ onOpenAI }) => {
-  // Reliable high-performance CDN link for the cinematic background video
-  const backgroundVideoUrl = "https://assets.mixkit.co/videos/preview/mixkit-top-aerial-shot-of-city-skyscrapers-at-night-4434-large.mp4";
+  // Transformed the Google Drive link into a direct streamable source for the background video
+  const backgroundVideoUrl = "https://drive.google.com/uc?id=1VUVvEVm7tpAix6g9GzYuThqdQUqZTV7Q&export=download";
   const posterImageUrl = "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&q=80&w=2070";
 
   return (
@@ -23,9 +23,10 @@ export const Hero: React.FC<HeroProps> = ({ onOpenAI }) => {
           playsInline 
           poster={posterImageUrl}
           className="absolute top-1/2 left-1/2 min-w-full min-h-full w-auto h-auto object-cover -translate-x-1/2 -translate-y-1/2 pointer-events-none"
-          style={{ filter: 'brightness(0.35) contrast(1.1) saturate(0.7)' }}
+          style={{ filter: 'brightness(0.4) contrast(1.1) saturate(0.8)' }}
         >
           <source src={backgroundVideoUrl} type="video/mp4" />
+          Your browser does not support the video tag.
         </video>
         
         <div className="absolute inset-0 bg-gradient-to-r from-navy-900/95 via-navy-900/40 to-transparent z-10"></div>
@@ -109,7 +110,7 @@ export const Hero: React.FC<HeroProps> = ({ onOpenAI }) => {
                   onClick={onOpenAI}
                   className="w-full py-4 bg-white text-navy-900 rounded-2xl font-black text-sm uppercase tracking-widest hover:bg-accent-500 hover:text-white transition-all duration-300 shadow-xl flex items-center justify-center gap-3 transform hover:-translate-y-1 active:scale-95"
                 >
-                  Launch Live AI
+                  Chat or Speak
                   <Sparkles size={18} />
                 </button>
 
