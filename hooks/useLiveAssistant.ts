@@ -24,33 +24,62 @@ export const useLiveAssistant = () => {
   // Session
   const sessionPromiseRef = useRef<Promise<any> | null>(null);
 
+  /**
+   * Internal helper to announce status using the AI's voice via TTS.
+   */
+  const announceStatus = useCallback(async (text: string) => {
+    try {
+      const apiKey = process.env.API_KEY;
+      if (!apiKey) return;
+      
+      const ai = new GoogleGenAI({ apiKey });
+      const response = await ai.models.generateContent({
+        model: MODELS.TTS,
+        contents: [{ parts: [{ text }] }],
+        config: {
+          responseModalities: [Modality.AUDIO],
+          speechConfig: {
+            voiceConfig: {
+              prebuiltVoiceConfig: { voiceName: 'Kore' }, // Matching Hannah's live voice
+            },
+          },
+        },
+      });
+
+      const base64Audio = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
+      if (base64Audio && outputContextRef.current && outputContextRef.current.state !== 'closed') {
+        const audioBytes = decode(base64Audio);
+        const audioBuffer = await decodeAudioData(audioBytes, outputContextRef.current, 24000, 1);
+        
+        const source = outputContextRef.current.createBufferSource();
+        source.buffer = audioBuffer;
+        source.connect(outputContextRef.current.destination);
+        source.start(outputContextRef.current.currentTime);
+      }
+    } catch (err) {
+      console.error("Failed to announce status:", err);
+    }
+  }, []);
+
   const toggleMute = useCallback(() => {
     const newState = !isMutedRef.current;
     isMutedRef.current = newState;
     setIsMuted(newState);
-  }, []);
+    announceStatus(newState ? "Microphone muted" : "Microphone unmuted");
+  }, [announceStatus]);
 
   const disconnect = useCallback(() => {
-    // Stop Microphone
     if (streamRef.current) {
       streamRef.current.getTracks().forEach(track => track.stop());
       streamRef.current = null;
     }
-    
-    // Disconnect Nodes
     if (sourceRef.current) sourceRef.current.disconnect();
     if (processorRef.current) processorRef.current.disconnect();
-    
-    // Close Contexts
     if (inputContextRef.current) inputContextRef.current.close();
     if (outputContextRef.current) outputContextRef.current.close();
-    
-    // Close Session
     if (sessionPromiseRef.current) {
         sessionPromiseRef.current.then(session => session.close());
     }
-    
-    // Stop Audio Playback
     sourcesRef.current.forEach(s => s.stop());
     sourcesRef.current.clear();
 
@@ -66,48 +95,68 @@ export const useLiveAssistant = () => {
   const connect = useCallback(async () => {
     try {
       setError(null);
-
-      // Ensure API Key
+      
+      // 1. Check API Key
       if (!await window.aistudio.hasSelectedApiKey()) {
         await window.aistudio.openSelectKey();
       }
-      
       const apiKey = process.env.API_KEY;
       if (!apiKey) {
-        throw new Error("API Key not found. Please select a valid key.");
+        setError("Secure connection failed. A valid API key is required to initiate intake.");
+        return;
+      }
+
+      // 2. Request Microphone Access
+      let stream: MediaStream;
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        streamRef.current = stream;
+      } catch (micErr: any) {
+        if (micErr.name === 'NotAllowedError') {
+          setError("I apologize, but I need microphone access to hear you. Please check your browser's security settings.");
+        } else if (micErr.name === 'NotFoundError') {
+          setError("I couldn't detect a microphone. Please ensure your device's audio input is properly connected.");
+        } else {
+          setError("I'm having trouble accessing your microphone. Please verify your system settings.");
+        }
+        return;
+      }
+
+      // 3. Initialize Audio Contexts
+      try {
+        inputContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 16000 });
+        outputContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
+        nextStartTimeRef.current = outputContextRef.current.currentTime;
+      } catch (audioCtxErr) {
+        setError("Browser audio initialization failed. Please try refreshing the page.");
+        return;
       }
 
       const client = new GoogleGenAI({ apiKey });
-      
-      // 1. Setup Audio Contexts
-      inputContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 16000 });
-      outputContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
-      nextStartTimeRef.current = outputContextRef.current.currentTime;
 
-      // 2. Get Microphone Stream
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      streamRef.current = stream;
-
-      // 3. Connect to Gemini Live
+      // 4. Connect to Live API
       const sessionPromise = client.live.connect({
         model: MODELS.LIVE,
         config: {
           responseModalities: [Modality.AUDIO],
           speechConfig: {
-            voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Kore' } }, // Female voice
+            voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Kore' } }, 
           },
           systemInstruction: SYSTEM_INSTRUCTION,
         },
         callbacks: {
           onopen: () => {
-            console.log('Gemini Live Connected');
             setIsConnected(true);
+            setError(null);
+            
+            // Proactive trigger: Nudge the model to start speaking the greeting immediately
+            sessionPromise.then(session => {
+              session.sendRealtimeInput({ parts: [{ text: "Please begin the legal intake process greeting." }] });
+            });
 
-            // Setup Input Processing
             if (!inputContextRef.current) return;
             const source = inputContextRef.current.createMediaStreamSource(stream);
             sourceRef.current = source;
-            
             const processor = inputContextRef.current.createScriptProcessor(4096, 1, 1);
             processorRef.current = processor;
 
@@ -116,52 +165,44 @@ export const useLiveAssistant = () => {
                 setVolume(0);
                 return;
               }
-
               const inputData = e.inputBuffer.getChannelData(0);
-              
-              // Simple volume meter logic
               let sum = 0;
               for(let i=0; i<inputData.length; i++) sum += inputData[i] * inputData[i];
               const rms = Math.sqrt(sum / inputData.length);
-              setVolume(Math.min(rms * 5, 1)); // Scale for visualizer
+              // Normalize volume for UI
+              setVolume(Math.min(rms * 10, 1)); 
 
               const pcmBlob = createBlob(inputData);
               sessionPromise.then(session => {
                  session.sendRealtimeInput({ media: pcmBlob });
+              }).catch(err => {
+                 console.error("Failed to send realtime input:", err);
               });
             };
-
             source.connect(processor);
             processor.connect(inputContextRef.current.destination);
           },
           onmessage: async (msg: LiveServerMessage) => {
             const outputCtx = outputContextRef.current;
-            if (!outputCtx) return;
+            if (!outputCtx || outputCtx.state === 'closed') return;
 
-            // Handle Audio Output
             const base64Audio = msg.serverContent?.modelTurn?.parts?.[0]?.inlineData?.data;
             if (base64Audio) {
               setIsSpeaking(true);
               const audioBytes = decode(base64Audio);
               const audioBuffer = await decodeAudioData(audioBytes, outputCtx, 24000, 1);
-              
               const source = outputCtx.createBufferSource();
               source.buffer = audioBuffer;
               source.connect(outputCtx.destination);
-              
-              // Determine start time to ensure smooth playback
               const startTime = Math.max(nextStartTimeRef.current, outputCtx.currentTime);
               source.start(startTime);
               nextStartTimeRef.current = startTime + audioBuffer.duration;
-              
               sourcesRef.current.add(source);
               source.onended = () => {
                 sourcesRef.current.delete(source);
                 if (sourcesRef.current.size === 0) setIsSpeaking(false);
               };
             }
-
-            // Handle Interruption
             if (msg.serverContent?.interrupted) {
               sourcesRef.current.forEach(s => s.stop());
               sourcesRef.current.clear();
@@ -169,49 +210,29 @@ export const useLiveAssistant = () => {
               setIsSpeaking(false);
             }
           },
-          onclose: () => {
-            console.log('Gemini Live Closed');
+          onclose: (e) => {
+            if (e.code === 1006) {
+              setError("The connection was lost unexpectedly due to network instability.");
+            }
             disconnect();
           },
-          onerror: (err) => {
-            console.error('Gemini Live Error', err);
-            // Handle specific 404/400 error by prompting for key selection
-            const errStr = String(err);
-            if (errStr.includes('Requested entity was not found') || errStr.includes('404') || errStr.includes('400') || errStr.includes('API Key not found')) {
-                try {
-                    (window as any).aistudio?.openSelectKey();
-                } catch (e) {
-                    console.error(e);
-                }
-            }
-            setError("Connection error. Please try again.");
+          onerror: (err: any) => {
+            console.error("Live Assistant Error:", err);
+            setError("Connection error encountered. Please check your internet connection and try again.");
             disconnect();
           }
         }
       });
-
       sessionPromiseRef.current = sessionPromise;
-
     } catch (err: any) {
-      console.error("Failed to connect", err);
-      // Handle specific 404/400 error by prompting for key selection
-      const errStr = err.message || String(err);
-      if (errStr.includes('Requested entity was not found') || errStr.includes('404') || errStr.includes('400') || errStr.includes('API Key not found')) {
-          try {
-             (window as any).aistudio?.openSelectKey();
-          } catch (e) {
-              console.error(e);
-          }
-      }
-      setError("Could not access microphone or connect to service.");
+      console.error("Root connect error:", err);
+      setError("I'm sorry, I'm having trouble initializing the secure voice system.");
       disconnect();
     }
-  }, [disconnect]);
+  }, [disconnect, announceStatus]);
 
   useEffect(() => {
-    return () => {
-        disconnect();
-    }
+    return () => disconnect();
   }, [disconnect]);
 
   return { isConnected, isSpeaking, volume, error, connect, disconnect, isMuted, toggleMute };

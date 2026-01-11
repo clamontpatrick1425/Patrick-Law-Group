@@ -4,7 +4,6 @@ import { Header } from './components/Header';
 import { Hero } from './components/Hero';
 import { PracticeAreas, ValueProp, Testimonials, Team, RecentVictories, FAQSection } from './components/Features';
 import { Footer } from './components/Footer';
-import { AIAssistantWidget } from './components/AIAssistantWidget';
 import { AttorneyProfile } from './components/AttorneyProfile';
 import { CaseResultsPage } from './components/CaseResultsPage';
 import { AboutPage } from './components/AboutPage';
@@ -12,16 +11,22 @@ import { PracticeAreaPage } from './components/PracticeAreaPage';
 import { Breadcrumbs } from './components/Breadcrumbs';
 import { DisclaimerModal, TermsModal, PrivacyPolicyModal } from './components/LegalModals';
 import { ContactModal } from './components/ContactModal';
+import { AIAssistantWidget } from './components/AIAssistantWidget';
+import { useLiveAssistant } from './hooks/useLiveAssistant';
 import { Attorney, CaseResult } from './types';
 
-// Mock Data
+// Professional Attorney Avatars (Unsplash Studio Portraits)
+const SARAH_IMG = "https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?auto=format&fit=crop&q=80&w=500&h=500";
+const MICHAEL_IMG = "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&fit=crop&q=80&w=500&h=500"; // Sharp suit and tie
+const JESSICA_IMG = "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=500&h=500"; // Professional blazer
+
 const ATTORNEYS: Attorney[] = [
     { 
         id: '1', 
         name: "Sarah Jenkins", 
         role: "Managing Partner", 
         bio: "Specializing in complex corporate mergers and high-stakes business litigation with over 20 years of experience.",
-        imageUrl: "https://picsum.photos/id/64/300/300",
+        imageUrl: SARAH_IMG,
         practiceAreas: ["Corporate Law", "Mergers & Acquisitions", "Business Litigation"],
         education: ["J.D., Harvard Law School", "B.A. Economics, Yale University"],
         email: "sarah.jenkins@patricklaw.com",
@@ -37,7 +42,7 @@ const ATTORNEYS: Attorney[] = [
         name: "Michael Ross", 
         role: "Senior Partner", 
         bio: "A relentless advocate for personal injury victims, securing millions in settlements for clients across the state.",
-        imageUrl: "https://picsum.photos/id/91/300/300",
+        imageUrl: MICHAEL_IMG,
         practiceAreas: ["Personal Injury", "Wrongful Death", "Product Liability"],
         education: ["J.D., Columbia Law School", "B.A. Political Science, Duke University"],
         email: "michael.ross@patricklaw.com",
@@ -53,7 +58,7 @@ const ATTORNEYS: Attorney[] = [
         name: "Jessica Chen", 
         role: "Associate", 
         bio: "Expert in Intellectual Property law, helping innovators protect their digital assets and creative works.",
-        imageUrl: "https://picsum.photos/id/65/300/300",
+        imageUrl: JESSICA_IMG,
         practiceAreas: ["Intellectual Property", "Patent Law", "Trademark Litigation"],
         education: ["J.D., Stanford Law School", "B.S. Computer Science, MIT"],
         email: "jessica.chen@patricklaw.com",
@@ -99,28 +104,6 @@ const CASE_RESULTS: CaseResult[] = [
         challenge: "A global retail giant filed a trademark infringement lawsuit against our client, aiming to drain their resources and force a rebrand, despite the markets being completely distinct.",
         strategy: "We executed an aggressive discovery process that uncovered internal communications proving the plaintiff knew there was no consumer confusion. We filed for summary judgment based on this bad faith evidence.",
         duration: "14 Months"
-    },
-    {
-        id: '4',
-        title: "Construction Accident Liability",
-        practiceArea: "Personal Injury",
-        description: "Construction worker fell from unsafe scaffolding.",
-        outcome: "Pre-trial Settlement",
-        amount: "$2.1 Million",
-        challenge: "The General Contractor denied liability, claiming the subcontractor was solely responsible for safety protocols, creating a liability loop that left the injured worker without recourse.",
-        strategy: "By analyzing site logs and daily reports, we proved the General Contractor explicitly directed the specific unsafe work practices that led to the accident, piercing their liability shield.",
-        duration: "18 Months"
-    },
-    {
-        id: '5',
-        title: "Breach of Contract - Supply Chain",
-        practiceArea: "Business Law",
-        description: "Manufacturing firm faced bankruptcy due to supplier failure.",
-        outcome: "Arbitration Award",
-        amount: "$3.4 Million",
-        challenge: "A key supplier failed to deliver critical components during peak season, citing 'force majeure' due to raw material shortages, threatening our client's solvency.",
-        strategy: "We demonstrated through forensic accounting and supply chain tracking that the supplier had actually diverted materials to a higher-paying competitor, invalidating their force majeure claim.",
-        duration: "3 Weeks"
     }
 ];
 
@@ -129,13 +112,16 @@ const App: React.FC = () => {
   const [selectedAttorneyId, setSelectedAttorneyId] = useState<string | null>(null);
   const [selectedPracticeId, setSelectedPracticeId] = useState<string | null>(null);
   
+  // Assistant State
+  const [isAssistantOpen, setIsAssistantOpen] = useState(false);
+  const [assistantTab, setAssistantTab] = useState<'chat' | 'voice'>('chat');
+  const voiceState = useLiveAssistant();
+
   // Modal State
   const [showDisclaimer, setShowDisclaimer] = useState(false);
   const [showTerms, setShowTerms] = useState(false);
   const [showPrivacy, setShowPrivacy] = useState(false);
   const [showContactModal, setShowContactModal] = useState(false);
-  const [isAIWidgetOpen, setIsAIWidgetOpen] = useState(false);
-  const [aiWidgetTab, setAiWidgetTab] = useState<'chat' | 'voice'>('chat');
 
   // Dynamic Title Management
   useEffect(() => {
@@ -149,7 +135,6 @@ const App: React.FC = () => {
         const attorney = ATTORNEYS.find(a => a.id === selectedAttorneyId);
         if (attorney) title = `${attorney.name} - Attorney Profile`;
     } else if (currentView === 'practice' && selectedPracticeId) {
-        // Formatter for practice id to Title Case
         const pTitle = selectedPracticeId.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
         title = `${pTitle} - Patrick Law Firm`;
     }
@@ -184,19 +169,11 @@ const App: React.FC = () => {
 
   const handleOpenContact = () => setShowContactModal(true);
 
-  const handleOpenVoiceAI = () => {
-    setAiWidgetTab('voice');
-    setIsAIWidgetOpen(true);
+  const handleOpenAssistant = (tab: 'chat' | 'voice') => {
+    setAssistantTab(tab);
+    setIsAssistantOpen(true);
   };
 
-  const handleToggleAIWidget = () => {
-    if (!isAIWidgetOpen) {
-        setAiWidgetTab('chat'); // Default to chat when clicking the side tab
-    }
-    setIsAIWidgetOpen(!isAIWidgetOpen);
-  };
-
-  // Content Renderer with Wrapper for Breadcrumbs
   const renderContent = () => {
       if (currentView === 'attorney' && selectedAttorneyId) {
           const attorney = ATTORNEYS.find(a => a.id === selectedAttorneyId);
@@ -260,10 +237,12 @@ const App: React.FC = () => {
           );
       }
 
-      // Default Home View
       return (
         <main>
-            <Hero onOpenAI={handleOpenVoiceAI} />
+            <Hero 
+              voiceState={voiceState} 
+              onOpenAssistant={handleOpenAssistant} 
+            />
             <RecentVictories results={CASE_RESULTS} onViewAll={handleViewResults} />
             <PracticeAreas onViewArea={handleViewPracticeArea} />
             <ValueProp />
@@ -286,13 +265,14 @@ const App: React.FC = () => {
         onOpenPrivacy={() => setShowPrivacy(true)}
         onSchedule={handleOpenContact}
       />
+
       <AIAssistantWidget 
-        isOpen={isAIWidgetOpen} 
-        onToggle={handleToggleAIWidget} 
-        initialTab={aiWidgetTab}
+        isOpen={isAssistantOpen} 
+        onToggle={() => setIsAssistantOpen(!isAssistantOpen)}
+        initialTab={assistantTab}
+        voiceState={voiceState}
       />
 
-      {/* Modals */}
       <DisclaimerModal isOpen={showDisclaimer} onClose={() => setShowDisclaimer(false)} />
       <TermsModal isOpen={showTerms} onClose={() => setShowTerms(false)} />
       <PrivacyPolicyModal isOpen={showPrivacy} onClose={() => setShowPrivacy(false)} />
